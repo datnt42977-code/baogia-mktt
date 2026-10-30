@@ -2,7 +2,7 @@
 // - App shell (html/js/css): network-first → luôn lấy bản mới, fallback cache khi offline
 // - Assets (ảnh, manifest): cache-first cho tốc độ
 // Bump VERSION khi deploy để xoá cache cũ.
-const VERSION = 'v31';
+const VERSION = 'v32';
 const CACHE = 'baogia-mktt-' + VERSION;
 const ASSETS = [
   './',

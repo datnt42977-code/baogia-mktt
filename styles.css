@@ -163,8 +163,12 @@ body {
   box-shadow: 0 0 6px rgba(0,0,0,.15);
   color: #000;
   position: relative;
-  font-size: calc(11pt * var(--fit));
+  font-size: calc(11.5pt * var(--fit));
+  line-height: 1.4;
 }
+
+/* mọi khối con tự tính cỡ chữ theo --fit của chính nó (mỗi trang 1 fit) */
+:where(#quote) > * { font-size: calc(11.5pt * var(--fit)); }
 
 /* Dấu treo — top-left hanging seal overlapping header */
 .q-hanging-stamp {
@@ -212,11 +216,12 @@ body {
 .q-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: calc(10.5pt * var(--fit));
+  font-size: calc(11pt * var(--fit));
+  line-height: 1.35;
 }
 .q-table th, .q-table td {
   border: 0.75pt solid #000;
-  padding: calc(3pt * var(--fit)) calc(4pt * var(--fit));
+  padding: calc(4pt * var(--fit)) calc(6pt * var(--fit));
   vertical-align: middle;
 }
 .q-table th {
@@ -224,13 +229,15 @@ body {
   font-weight: bold;
   text-align: center;
 }
-.q-table td.num, .q-table th:nth-child(5) { text-align: right; }
+.q-table td.num { text-align: right; white-space: nowrap; }
 .q-table td:first-child { text-align: center; }
 
 .q-vat-note { font-style: italic; margin: calc(4pt * var(--fit)) 0 0; }
 
-.q-notes { font-size: calc(10.5pt * var(--fit)); margin: calc(6pt * var(--fit)) 0; }
+.q-notes { font-size: calc(11.5pt * var(--fit)); margin: calc(6pt * var(--fit)) 0; }
 .q-notes ul { padding-left: 18pt; margin: calc(4pt * var(--fit)) 0; }
+.q-notes li { margin: calc(2pt * var(--fit)) 0; }
+#quote p { margin: calc(5pt * var(--fit)) 0; }
 
 .q-signature {
   display: flex;
@@ -261,6 +268,10 @@ body {
   margin-top: -180pt;
 }
 
+#q-pump-table td.num { text-align: center; }
+.q-sig-stack { height: calc(140pt * var(--fit)); }
+.q-signature-img { height: calc(350pt * var(--fit)); margin-top: calc(-150pt * var(--fit)); }
+
 /* Red editable text on screen */
 .r { color: #FF0000; }
 
@@ -268,7 +279,7 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm;
+    margin: 10mm;
   }
   html, body, #quote, .q-hanging-stamp, .q-signature-img, .q-logo img {
     -webkit-print-color-adjust: exact !important;
@@ -289,21 +300,24 @@ body {
   /* avoid splitting tables across pages awkwardly */
   .q-table { page-break-inside: auto; }
   .q-table tr { page-break-inside: avoid; }
-  .q-section { page-break-after: avoid; }
+  .q-section { page-break-after: avoid; break-after: avoid; }
+  /* trang 2 bắt đầu từ phần Ghi chú */
+  .q-break { page-break-before: always; break-before: page; margin-top: 0 !important; }
+  #quote thead { display: table-header-group; }
   /* chữ ký phải giữ nguyên 1 cục, không tách trang */
   .q-signature { page-break-inside: avoid; break-inside: avoid; }
 }
 
 /* ================ MOBILE ================ */
-@media (max-width: 800px) {
-  #quote {
+@media screen and (max-width: 800px) {
+  #quote:not(.measuring) {
     width: 100%;
     min-height: auto;
     padding: 12px;
     box-shadow: none;
     font-size: 10pt;
   }
-  .q-header { flex-direction: column; text-align: center; gap: 6px; }
-  .q-logo img { height: 60px; }
-  .q-table { font-size: 9.5pt; }
+  #quote:not(.measuring) .q-header { flex-direction: column; text-align: center; gap: 6px; }
+  #quote:not(.measuring) .q-logo img { height: 60px; }
+  #quote:not(.measuring) .q-table { font-size: 9.5pt; }
 }

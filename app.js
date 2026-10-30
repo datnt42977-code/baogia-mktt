@@ -151,58 +151,60 @@
     });
   }
 
-  // Co/giãn font + margin theo biến --fit để báo giá lấp gần đầy 2 trang A4
-  // mà không tràn sang trang 3.
+  // Chia báo giá thành 2 trang cân đối:
+  //  - Trang 1: thông tin + đơn giá bê tông + phụ gia
+  //  - Trang 2: ghi chú + đơn giá bơm (nếu có) + thanh toán + chữ ký
+  // Sau đó chọn cỡ chữ (--fit) LỚN NHẤT mà cả 2 phần đều vừa 1 trang A4.
   function fitToTwoPages() {
     const quote = document.getElementById('quote');
     if (!quote) return;
+    // Trang 2 bắt đầu từ phần Ghi chú → 2 trang cân đối hơn.
+    const breakEl = document.getElementById('q-notes');
+    quote.querySelectorAll('.q-break').forEach((el) => el.classList.remove('q-break'));
+    if (breakEl) breakEl.classList.add('q-break');
+
     const pxPerMm = 96 / 25.4;
-    // @page margin: 8mm × (top+bottom) × 2 trang = 32mm bị trừ
-    // → vùng in lý thuyết = 594 - 32 = 562mm.
-    // Lùi sâu hơn (40mm) vì iOS Safari có thể ép margin tối thiểu lớn hơn
-    // và .q-signature là flex block không tách trang được → cần buffer
-    // đủ rộng để nguyên cục chữ ký lọt trang 2.
-    const maxPx = 520 * pxPerMm;
-    const targetPx = 510 * pxPerMm;
+    // Vùng in: A4 297mm − lề @page 2×10mm = 277mm; chừa ~12mm dự phòng
+    // cho trình duyệt điện thoại (iOS Safari ép lề lớn hơn).
+    const maxPx = 265 * pxPerMm;
 
-    // Tạm ép #quote về đúng kích thước A4 (210mm) khi đo, để scrollHeight
-    // khớp với layout in. Nếu không, trên mobile #quote bị CSS responsive
-    // co còn width viewport (~375px), content wrap dài gấp đôi → fit sai.
-    const prevMin = quote.style.minHeight;
-    const prevWidth = quote.style.width;
-    const prevMaxW = quote.style.maxWidth;
-    const prevPad = quote.style.padding;
-    const prevFontSize = quote.style.fontSize;
+    // Đo ở đúng bố cục lúc in: rộng 190mm (210 − 2×10mm), không padding.
+    const saved = ['minHeight', 'width', 'maxWidth', 'padding', 'fontSize'].map((k) => [k, quote.style[k]]);
+    quote.classList.add('measuring');
     quote.style.minHeight = '0';
-    quote.style.width = '210mm';
-    quote.style.maxWidth = '210mm';
-    quote.style.padding = '15mm';
-    quote.style.fontSize = 'calc(11pt * var(--fit))';
+    quote.style.width = '190mm';
+    quote.style.maxWidth = '190mm';
+    quote.style.padding = '0';
+    quote.style.fontSize = 'calc(11.5pt * var(--fit))';
 
-    // Bracket scale trong [0.45, 1.40]. Sàn 0.45 đủ co cho ≥3 mác bê tông
-    // vẫn vừa 2 trang. Init best = lo để worst-case dùng scale nhỏ nhất,
-    // tránh fallback về 1 gây tràn trang 3.
-    let lo = 0.45, hi = 1.40, best = lo;
-    for (let i = 0; i < 20; i++) {
-      const mid = (lo + hi) / 2;
-      quote.style.setProperty('--fit', mid.toFixed(3));
-      const h = quote.scrollHeight;
-      if (h <= maxPx) {
-        best = mid;
-        if (h >= targetPx) break; // đủ lấp đầy, dừng
-        lo = mid;
-      } else {
-        hi = mid;
+    // Mỗi trang có cỡ chữ riêng (--fit đặt trên từng khối con) để cả 2 trang
+    // đều lấp gần đầy, không trang nào bị trống nửa dưới.
+    const kids = Array.from(quote.children);
+    const bi = breakEl ? kids.indexOf(breakEl) : kids.length;
+    const p1 = kids.slice(0, bi), p2 = kids.slice(bi);
+    const setFit = (els, f) => els.forEach((el) => el.style.setProperty('--fit', f.toFixed(3)));
+    const splitTop = () => breakEl
+      ? breakEl.getBoundingClientRect().top - quote.getBoundingClientRect().top
+      : quote.scrollHeight;
+    const solve = (els, measure) => {
+      // Sàn 0.85 (~9.8pt) để chữ không bao giờ quá nhỏ; trần 1.3.
+      let lo = 0.85, hi = 1.3, best = lo;
+      setFit(els, hi);
+      if (measure() <= maxPx) return hi;
+      for (let i = 0; i < 14; i++) {
+        const mid = (lo + hi) / 2;
+        setFit(els, mid);
+        if (measure() <= maxPx) { best = mid; lo = mid; } else { hi = mid; }
       }
-    }
-    quote.style.setProperty('--fit', best.toFixed(3));
-
-    // Khôi phục style để CSS responsive tiếp quản trên mobile
-    quote.style.minHeight = prevMin;
-    quote.style.width = prevWidth;
-    quote.style.maxWidth = prevMaxW;
-    quote.style.padding = prevPad;
-    quote.style.fontSize = prevFontSize;
+      setFit(els, best);
+      return best;
+    };
+    quote.style.setProperty('--fit', '1');
+    setFit(p2, 1);
+    solve(p1, splitTop);
+    if (p2.length) solve(p2, () => quote.scrollHeight - splitTop());
+    saved.forEach(([k, v]) => { quote.style[k] = v; });
+    quote.classList.remove('measuring');
   }
 
   // ---------- VAT ----------
